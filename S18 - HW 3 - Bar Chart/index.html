@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script> <!-- for color scales -->
+
+<style>   
+  body {font-family: calibri;} 
+  .axis {font: 14px calibri;}
+  .label {font: 16px calibri;}
+</style>
+
+<body>
+	<p>Frequency of usage of letters in English</p>
+	<h2>Bar Chart 1</h2>
+  
+  <div><svg id="chart1" width="800" height="400"></svg></div>
+  <div><svg id="legend1" width="800" hegiht="50"></svg></div>
+	<h2>Bar Chart 2</h2>
+  <div><svg id="chart2" width="800" height="400"></svg></div>
+  <div><svg id="legend2" width="800" hegiht="50"></svg></div>
+<div>
+  
+ 
+ </div>
+<script>
+// chart 1
+
+  
+var svg1 = d3.select("#chart1"), 
+    margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = +svg1.attr("width") - margin.left - margin.right,
+    height = +svg1.attr("height") - margin.top - margin.bottom;
+
+// See https://github.com/d3/d3-scale
+var x1 = d3.scaleBand().rangeRound([0, width]).padding(0.1),
+    y1 = d3.scaleLinear().rangeRound([height, 0]); // note that we've reversed the range
+
+// creates new svg <g> space, sets new (0,0) at left, top margin
+var g1 = svg1.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.tsv("data.tsv", function(d) {
+  d.frequency = +d.frequency;    // convert text to number
+  return d;
+}, function(error, data) {
+  if (error) throw error;
+
+  // See https://www.dashingd3js.com/d3js-scales
+  // maps domain of x values (letters) to range of positions on x-axis
+  x1.domain(data.map(function(d) { return d.letter; }));  
+  // maps domain of y values (frequencies 0, max freq) to range of positions on y-axis
+  y1.domain([0, d3.max(data, function(d) { return d.frequency; })]); 
+
+  // x-axis
+  g1.append("g")
+    .attr("class", "axis x-axis")
+    .attr("transform", "translate(0," + height + ")") // move axis to bottom of chart
+    .call(d3.axisBottom(x1));
+  
+  // y-axis
+  g1.append("g")
+    .attr("class", "axis y-axis")
+    .call(d3.axisLeft(y1).ticks(10, "#")); // number of ticks and type
+
+  // y-axis label
+  g1.append("text")
+  	.attr("class", "label")
+    .attr("x", 0-margin.left)       // set x position of label
+    .attr("y", 0-margin.top/2)			// set y position of label
+    .style("text-anchor", "start")  // left-justify
+  	.text ("Frequency")
+  
+  // bars
+  //https://github.com/d3/d3-scale#ordinal-scales
+  //var huecolor = d3.scaleOrdinal(d3.schemeCategory20)
+ //.range(["#31a2be","#7f1f00","#6baed6","#cc3399","#9ecae1","#e6550d","#fd8d3c","#fdd0a2","#31a354","#cc6600","#d9d9d9","#a1d99b","#dc42f4","#f441a0","#804000","#9741f4","#5541f4","#ffffcc","#99ff99","#99cc00","	#1b00cc","#7cff51","#cc0033","#cc00cc","#00cc99"]);
+  //var huecolor = d3.scale.category20c();
+  var huecolor = d3.scaleSequential(d3.interpolateRainbow)
+  .domain([0, 26]);
+ // var  huecolor= d3.scaleSequential(d3.interpolatePRGn)
+  //.domain([-5 ,27]);
+ 
+ 
+  g1.selectAll(".bar")
+    .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { console.log ("letter: " + d.letter + ", x: " + x1(d.letter)); return x1(d.letter); })
+      .attr("y", function(d) { console.log ("freq: " + d.frequency + ", y: " + y1(d.frequency)); return y1(d.frequency); })
+      .attr("width", x1.bandwidth()) // width of each band 
+      .attr("height", function(d) { return height - y1(d.frequency); })
+  		.style("fill", function(d,i){return huecolor(i)})  // color of the bars
+  ;
+});
+var legend1 = svg1.selectAll(".legend1")
+    .data(data)
+    .enter().append("g")
+    .attr("class", "legend1")
+    .attr("transform", function(d, i) { return "translate(65," + i * 15 + ")"; });
+  
+  
+ </script>
+ 
+  
+<script>  
+// chart 2  
+var svg2 = d3.select("#chart2"),
+    margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = +svg2.attr("width") - margin.left - margin.right,
+    height = +svg2.attr("height") - margin.top - margin.bottom;
+
+var x2 = d3.scaleBand().rangeRound([0, width]).padding(0.1),
+    y2 = d3.scaleLinear().rangeRound([height, 0]);
+
+var g2 = svg2.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.tsv("data.tsv", function(d) {
+  d.frequency = +d.frequency; 
+  return d;
+}, function(error, data) {
+  if (error) throw error;
+
+  x2.domain(data.map(function(d) { return d.letter; }));
+  y2.domain([0, d3.max(data, function(d) { return d.frequency; })]); 
+//var saturationcolor=d3.
+  // x-axis
+  g2.append("g")
+    .attr("class", "axis axis--x")
+    .attr("transform", "translate(0," + height + ")") 
+    .call(d3.axisBottom(x2));
+
+  // y-axis
+  g2.append("g")
+    .attr("class", "axis axis--y")
+    .call(d3.axisLeft(y2).ticks(10, "#")); 
+
+  // y-axis label
+  g2.append("text")
+  	.attr("class", "label")
+    .attr("x", 0-margin.left)
+    .attr("y", 0-margin.top/2)
+    .style("text-anchor", "begin")
+  	.text ("Frequency")
+  
+  // bars
+  //var Saturationcolor = d3.scaleSequential(d3.interpolateBlues).domain([height, 0]);
+
+  g2.selectAll(".bar")
+    .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x2(d.letter); })
+      .attr("y", function(d) { return y2(d.frequency); })
+      .attr("width", x2.bandwidth())
+      .attr("height", function(d) { return height - y2(d.frequency); })
+  		.style("fill",function(d) {return d3.interpolateGreens(d.frequency * 10.5);})  // color of the bars
+  ;
+});
+  
+ var yfrequency=[0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1,0.11,0.12];
+  
+  
+</script>
+</body>
+</html>
