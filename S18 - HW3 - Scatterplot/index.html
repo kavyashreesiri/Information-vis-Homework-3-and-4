@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script> <!-- for color scales -->
+  
+<!-- Example based on http://bl.ocks.org/mbostock/3887118 -->
+<!-- Tooltip example from http://www.d3noob.org/2013/01/adding-tooltips-to-d3js-graph.html -->
+
+<style>
+  body { font-family: calibri; }
+  .axis { font: 14px calibri; }
+  .label {font: 15px calibri; }
+
+.tooltip {
+  position: absolute;
+  width: 220px;
+  height: 150px;
+  background: #f2f2f2;
+  pointer-events: none;
+}
+</style>
+  
+<body>
+  <h2>Scatterplot</h2>
+  <div><svg id="chart1" width="782" height="530"></svg></div>
+
+<script>
+// add the graph canvas to the body of the webpage
+var svg = d3.select("#chart1"), 
+    margin = {top: 20, right: 33, bottom: 62, left: 66},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom;
+
+var g = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// add the tooltip area to the webpage
+var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+// load data
+d3.csv("passing-stats-2014.csv", function (d) {
+  // change string (from CSV) into number format
+  d["Passing TD"] = +d["Passing TD"];
+  d["Rushing TD"] = +d["Rushing TD"];
+  return d;
+}, function(error, data) {
+
+	if (error) throw error;
+  
+/* 
+ * value accessor - returns the value to encode for a given data object.
+ * scale - maps value to a visual display encoding, such as a pixel position.
+ * map function - maps from data value to display value
+ */ 
+  
+// setup x 
+var xValue = function(d) { return d["Rushing TD"];}, // data -> value
+    xScale = d3.scaleLinear().range([0, width]),     // value -> display
+    xMap = function(d) { return xScale(xValue(d));}; // data -> display
+  
+
+// setup y
+var yValue = function(d) { return d["Passing TD"];}, // data -> value
+    yScale = d3.scaleLinear().range([height, 0]),    // value -> display
+    yMap = function(d) { return yScale(yValue(d));}; // data -> display
+
+  // don't want dots overlapping axis, so add in buffer to data domain
+  xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
+  yScale.domain([0, d3.max(data, yValue)+1]);
+
+  // x-axis
+  g.append("g")
+ 		.attr("class", "axis x-axis")
+  	.attr("transform", "translate(0," + height + ")") // move axis to bottom of chart
+   	.call(d3.axisBottom(xScale));
+  
+  // x-axis label
+  g.append("text")
+  	.attr("class", "label")
+   	.attr("x", width/2)
+    .attr("y", height+(margin.bottom*0.93))
+    .style("text-anchor", "middle")
+    .text("Rushing TDs");
+
+  // y-axis
+  g.append("g")
+ 		.attr("class", "axis y-axis")
+ 		.call(d3.axisLeft(yScale));
+  
+  // y-axis label
+  g.append("text") 
+    .attr("class", "label")
+    .attr("x", 0-(height/2))
+    .attr("y", 0-(margin.left*0.5))
+    .attr("transform", "rotate(-90)") // rotate text -90 degrees from x, y
+    .style("text-anchor", "middle")
+    .text("Passing TDs");
+
+  // draw dots
+  g.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", function (d)  { return d["Rushing Avg"]*2.0; })
+      .attr("cx", xMap)
+      .attr("cy", yMap)
+			.style("fill", function(d) {
+    var Cirlecolor;
+    if(d["Conf"]=== "Pac-12") {return "#003366";}
+    else if (d["Conf"] === "MAC") { return "#339966";} 					
+    else if (d["Conf"] === "CUSA") { return  "#666633";}
+    else if (d["Conf"] === "American") { return "#663300";}
+    else if (d["Conf"] === "MWC") { return "#ff0000";}
+    else if (d["Conf"] === "SEC") { return "#6600ff";}
+    else if (d["Conf"] === "Big Ten") {return "#ff5050";}
+    else if (d["Conf"] === "Big 12") { return "#ffff00";}
+    else if (d["Conf"] === "ACC") { return  "#ff99ff";}
+    else if (d["Conf"] === "Sun Belt") { return  "#ff6600" ;}
+    else if (d["Conf"] === "Ind") {return "#660066" ;}
+    return Circlecolor;
+  
+  })
+      // tooltip
+      .on("mouseover", function(d) {
+          tooltip.transition()
+               .duration(200)         // ms delay before appearing
+               .style("opacity", .8); // tooltip appears on mouseover
+          tooltip.html(d["Player"] + "<br/> " + d.School + "<br/>(" + xValue(d) 
+	        + ", " + yValue(d) + ")")
+               .style("left", (d3.event.pageX + 10) + "px")  // specify x location
+               .style("top", (d3.event.pageY - 28) + "px");  // specify y location
+      })
+      .on("mouseout", function(d) {
+          tooltip.transition()
+               .duration(500)
+               .style("opacity", 0); // disappear on mouseout
+      });
+});
+var conf=["Pac-12","MAC","CUSA","American","MWC","SEC","Big Ten","Big 12","ACC","Sun Belt","Ind"];
+var legend = svg.selectAll(".legend")
+    .data(conf)
+    .enter().append("g")
+    .attr("class", "legend")
+    .attr("transform", function(d, i) { return "translate(101," + i * 24 + ")"; });
+
+legend.append("rect")
+    .attr("x", width - 16)
+    .attr("width", 224)
+    .attr("height", 19)
+    .style("fill",function(d,i) {
+    var Cirlecolor;
+    if(conf[i]=== "Pac-12") {return "#003366";}
+    else if (conf[i] === "MAC") { return "#339966";} 					
+    else if (conf[i] === "CUSA") { return  "#666633";}
+    else if (conf[i] === "American") { return "#663300";}
+    else if (conf[i] === "MWC") { return "#ff0000";}
+    else if (conf[i] === "SEC") { return "#6600ff";}
+    else if (conf[i] === "Big Ten") {return "#ff5050";}
+    else if (conf[i] === "Big 12") { return "#ffff00";}
+    else if (conf[i] === "ACC") { return  "#ff99ff";}
+    else if (conf[i] === "Sun Belt") { return  "#ff6600" ;}
+    else if (conf[i]=== "Ind") {return "#660066" ;}
+    return Circlecolor;
+  } );
+
+legend.append("text")
+    .attr("x", width - 21)
+    .attr("y", 16)
+    .attr("dy", "0.00126615552em")
+    .style("text-anchor", "end")
+	  .attr("font-size","0.603832320000001em")
+    .text(function(d) { return d; });
+  
+svg.select(".legend").append("text")
+.attr("font-size","5.7672em")
+.attr("x",657)
+.attr("y",4.5)
+.attr("dy","0.192em")
+.attr("text-anchor","end")
+.attr("font-size","0.716352em")
+.attr("font-weight","bold")
+.text("Conferences");
+  
+</script>
+</body>
+</html>
