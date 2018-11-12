@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+      <link href="https://fonts.googleapis.com/css?family=Playball" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css?family=Copse" rel="stylesheet">
+	    <link href="https://fonts.googleapis.com/css?family=Work+Sans" rel="stylesheet">
+  		<script src="https://d3js.org/d3.v4.min.js"></script>
+ </head>
+
+<body>
+  <style>
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.axis--x path {
+  display: none;
+}
+
+.cheaders {
+        font-family: 'Playball', cursive;
+    }
+
+//.cheaders2 {
+        
+    }
+.cheaders3 {
+        font-family: 'Work Sans', sans-serif;
+    }
+ div.tooltip {
+        position: absolute;
+        text-align: center;
+        width: 150px;
+        height: 28px;
+        padding: 2px;
+        padding-top: 3px;
+        font: 12px sans-serif;
+        background: rgb(60, 179, 113);
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+    }
+</style>
+ <hr>
+
+<h3 class="cheaders2" style="padding-left: 289PX ">Year vs Total Donation amount</h3>  
+<svg class="line" width="851" height="733"></svg>
+   <br>
+<script>  
+
+var svg1 = d3.select(".line"),
+    margin1 = {top: 20, right: 20, bottom: 80, left: 151},
+    width1 = 864 - margin1.left - margin1.right,
+    height1 = 400 - margin1.top - margin1.bottom;
+    g1 = svg1.append("g").attr("transform", "translate(" + margin1.left + "," + margin1.top + ")");
+
+
+ var x = d3.scaleBand().rangeRound([0, width1]).padding(0.1),
+     y = d3.scaleLinear().rangeRound([height1, 0]);
+var line = d3.line()
+    .x(function(d) { return x(d.key); })
+    .y(function(d) { return y(d.value); });
+
+    d3.json("year_amount_line_chart.json", function(error, datajson1) {
+    var data = d3.nest()
+  .key(function(d) { return d.year;})
+  .rollup(function(d) { 
+   return d3.sum(d, function(g) {return g.commitment_amount_usd_constant; });
+  }).entries(datajson1);
+
+  data.sort(function(a, b) { return d3.ascending(a.key, b.key);});
+
+  x.domain(data.map(function(d) { return d.key; }));
+  y.domain([0, d3.max(data, function(d) { return d.value; })]);
+
+
+  g1.append("g")
+      .attr("transform", "translate(0," + height1 + ")")
+      .call(d3.axisBottom(x));
+
+   g1.append("text")             
+      .attr("transform",
+            "translate(" + (width1/2.0) + " ," + 
+                           (height1 + margin1.top + 30) + ")")
+ 
+      .style("text-anchor", "middle")
+   		.attr("fill", "#2285d6")
+      .text("Year")
+   		.style("font-size","19px");;
+
+  g1.append("g")
+      .call(d3.axisLeft(y).ticks(10))
+    .append("text")
+      .attr("fill", "#2285d6")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -175)
+      .attr("dy", "6.55em")
+      .attr("text-anchor", "end")
+      .text("Total Donation amount($)")
+  		.style("font-size","15px");
+
+  g1.append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round")
+      .attr("stroke-width", 1.8)
+      .attr("d", line);
+});
+</script>
+
+</body>
+</html>
